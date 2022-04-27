@@ -1,0 +1,14 @@
+Project Tasks:
+
+Basic primitives:
+    - World Builder:
+        - floor
+        - walls
+        - walls physics
+    - Controls:
+        - keys for moving
+            - no vertical movment
+        - mouse for looking around
+    - picture placement
+    - audio playing
+    - description on picture interaction
