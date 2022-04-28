@@ -8,7 +8,9 @@ const sizes = {
     height: window.innerHeight,
     firstPersonHeight: 10,
     friction: 10,
-    acceleration: 100
+    acceleration: 100,
+    collisionDistance: 3,
+    minMovingSpeed: 0.001
 }
 
 // Canvas
@@ -21,9 +23,9 @@ const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
 scene.background = new THREE.Color( 0xffffff );
 scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
-const light = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
-light.position.set( 0.5, 1, 0.75 );
-scene.add( light );
+
+const axesHelper = new THREE.AxesHelper( 50 );
+scene.add( axesHelper );
 
 // Camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 1000)
@@ -33,6 +35,7 @@ scene.add(camera)
 /**
  * Controls
  */
+// mouse
  const controls = new PointerLockControls( camera, document.body );
  document.querySelector('body').addEventListener('click', () => {
     controls.lock();
@@ -88,9 +91,6 @@ document.addEventListener('keyup', (event) => {
     }
 })
 
-
-// Mouse
-
 /**
  * Objects
  */
@@ -102,15 +102,13 @@ const floor = new THREE.Mesh(floorGeometry, floorMaterial)
 floorGeometry.rotateX( - Math.PI / 2);
 scene.add(floor)
 
-const box = new THREE.Mesh(
-    new THREE.BoxGeometry(2, 2, 2),
-    new THREE.MeshBasicMaterial({color: 0x00ff00})
+// Walls
+const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(50, 20, 1),
+    new THREE.MeshBasicMaterial({color: 0xcccccc})
 )
-box.position.set(0, 10, -5)
-scene.add(box)
-
-const axesHelper = new THREE.AxesHelper( 50 );
-scene.add( axesHelper );
+wall.position.set(0, 10, -15)
+scene.add(wall)
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -119,13 +117,17 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.render(scene, camera)
 
-const clock = new THREE.Clock()
-let prevTime = clock.getElapsedTime()
+/**
+ * Moving animation
+ */
 
 // Z is forward, X is sideways, Y unused - all relative to camera (not real axes)
 const velocity = new THREE.Vector3()
 const direction = new THREE.Vector3()
+const raycaser = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3())
 
+const clock = new THREE.Clock()
+let prevTime = clock.getElapsedTime()
 const tick = () => {
     const elapsedTime = clock.getElapsedTime()
     const timeDelta = elapsedTime - prevTime
@@ -134,13 +136,15 @@ const tick = () => {
     // "Friction"
     velocity.x -= velocity.x * timeDelta * sizes.friction
     velocity.z -= velocity.z * timeDelta * sizes.friction
+    if (Math.abs(velocity.x) < sizes.minMovingSpeed) { velocity.x = 0}
+    if (Math.abs(velocity.z) < sizes.minMovingSpeed) { velocity.z = 0}
 
-    // Find Move direction (relative to camera)
+    // Find move direction (relative to camera)
     direction.z = Number(moveForward) - Number(moveBackward)
     direction.x = Number(moveRight) - Number(moveLeft)
     direction.normalize()
 
-    // Move camera
+    // Add move Velocity
     if ( moveForward || moveBackward ) {
         velocity.z -= direction.z * sizes.acceleration * timeDelta * -1
     } 
@@ -148,6 +152,31 @@ const tick = () => {
         velocity.x -= direction.x * sizes.acceleration * timeDelta * -1
     }
 
+    // Find move direction
+    const normalizedVelocity = new THREE.Vector3()
+    normalizedVelocity.copy(velocity)
+    normalizedVelocity.normalize()
+    normalizedVelocity.x *= -1
+    let deg = 0;
+    if (normalizedVelocity.z !== 0) {
+        deg = Math.atan2(normalizedVelocity.x, normalizedVelocity.z)
+    } else if (normalizedVelocity.length() !== 0) {
+        deg = normalizedVelocity.x > 0 ? Math.PI / 2 : -Math.PI / 2
+    } else {
+        deg = 0
+    }
+
+    // Check for walls
+    const lookDirection = new THREE.Vector3()
+    camera.getWorldDirection(lookDirection)
+    lookDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), deg)
+    raycaser.set(controls.getObject().position, lookDirection)
+    const collisions = raycaser.intersectObject(wall)
+    if (collisions.length > 0 && collisions[0].distance < sizes.collisionDistance) {
+        velocity.set(0, 0, 0)
+    }
+
+    // Do move
     controls.moveRight(velocity.x * timeDelta)
     controls.moveForward(velocity.z * timeDelta)
 
@@ -155,6 +184,9 @@ const tick = () => {
     window.requestAnimationFrame(tick)
 }
 
+/**
+ * Window resize handling
+ */
 window.addEventListener('resize', () => {
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
