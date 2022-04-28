@@ -8,9 +8,11 @@ const sizes = {
     height: window.innerHeight,
     firstPersonHeight: 10,
     friction: 10,
-    acceleration: 100,
+    acceleration: 500,
     collisionDistance: 3,
-    minMovingSpeed: 0.001
+    minMovingSpeed: 0.001,
+    wallsHeight: 20,
+    wallsThickness: 1
 }
 
 // Canvas
@@ -21,7 +23,7 @@ const canvas = document.querySelector('canvas.webgl')
  */
 // Init
 const scene = new THREE.Scene()
-scene.background = new THREE.Color( 0xffffff );
+scene.background = new THREE.Color( 0x0000aa );
 scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
 
 const axesHelper = new THREE.AxesHelper( 50 );
@@ -30,17 +32,19 @@ scene.add( axesHelper );
 // Camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 1000)
 camera.position.y = sizes.firstPersonHeight
+camera.lookAt(new THREE.Vector3(1, 10, 0))
 scene.add(camera)
 
 /**
  * Controls
  */
 // mouse
- const controls = new PointerLockControls( camera, document.body );
- document.querySelector('body').addEventListener('click', () => {
+const controls = new PointerLockControls( camera, document.body );
+document.querySelector('body').addEventListener('click', () => {
     controls.lock();
- })
- scene.add(controls.getObject())
+})
+scene.add(controls.getObject())
+
 
 // Keys Controll
 let moveForward = false;
@@ -103,14 +107,29 @@ floorGeometry.rotateX( - Math.PI / 2);
 scene.add(floor)
 
 // Walls
-const wall = new THREE.Mesh(
-    new THREE.BoxGeometry(50, 20, 1),
-    new THREE.MeshBasicMaterial({color: 0xcccccc})
-)
-wall.position.set(0, 10, -15)
-scene.add(wall)
+const wallsConfig = [
+    {z: 20, x: 35, rotation: 0, length: 70},
+    {z: 90, x: 35, rotation: 0, length: 70},
+    {z: 10, x: 70, rotation: Math.PI / 2, length: 20},
+    {z: 0, x: 120, rotation: 0, length: 100},
+    {z: 85, x: 170, rotation: Math.PI / 2, length: 170},
+    {z: 170, x: 120, rotation: 0, length: 100},
+    {z: 130, x: 70, rotation: Math.PI / 2, length: 80},
+]
+const wallMaterial = new THREE.MeshBasicMaterial({color: 0xcccccc});
+const wallMeshes = []
+for (const wall of wallsConfig) {
+    const geomery = new THREE.BoxGeometry(wall.length, sizes.wallsHeight, sizes.wallsThickness)
+    const mesh = new THREE.Mesh(geomery, wallMaterial)
+    mesh.position.set(wall.x, 10, wall.z)
+    mesh.rotateY(wall.rotation)
+    wallMeshes.push(mesh)
+    scene.add(mesh)
+}
 
-// Renderer
+/**
+ * Renderer
+ */
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas
 })
@@ -171,7 +190,7 @@ const tick = () => {
     camera.getWorldDirection(lookDirection)
     lookDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), deg)
     raycaser.set(controls.getObject().position, lookDirection)
-    const collisions = raycaser.intersectObject(wall)
+    const collisions = raycaser.intersectObjects(wallMeshes)
     if (collisions.length > 0 && collisions[0].distance < sizes.collisionDistance) {
         velocity.set(0, 0, 0)
     }

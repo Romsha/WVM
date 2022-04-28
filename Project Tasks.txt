@@ -2,13 +2,13 @@ Project Tasks:
 
 Basic primitives:
     - World Builder:
-        - floor
+        - floor - V
         - walls
-        - walls physics
+        - walls physics - V
     - Controls:
-        - keys for moving
-            - no vertical movment
-        - mouse for looking around
+        - keys for moving - V
+            - no vertical movment - V
+        - mouse for looking around - V
     - picture placement
     - audio playing
     - description on picture interaction
