@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { PointerLockControls } from '../node_modules/three/examples/jsm/controls/PointerLockControls'
+import { PositionalAudioHelper } from '../node_modules/three/examples/jsm/helpers/PositionalAudioHelper';
 
 
 // Sizes
@@ -15,7 +16,8 @@ const sizes = {
     wallsThickness: 1,
     pictureDepth: 0.5,
     pictureHeight: 10,
-    pictureViewDistance: 30
+    pictureViewDistance: 30,
+    pictureMusicDistance: 50
 }
 
 // Canvas
@@ -147,11 +149,13 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
 
 // Pictures
 const pictureConfig = [
-    {folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2},
-    {folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2} ,
-    {folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI},
+    {folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3'},
+    {folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3'} ,
+    {folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3'},
 ]
+// TODO: pictures and meshes require uniq IDs (push order depends on loading times)
 const pictureMeshes = []
+const audioObjects = []
 const blackMaterial = new THREE.MeshBasicMaterial({color: 0x000000})
 for (const [index, picture] of pictureConfig.entries()) {
     textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
@@ -178,8 +182,26 @@ for (const [index, picture] of pictureConfig.entries()) {
         image.name = `picture-${index}`
         pictureMeshes.push(image)
         scene.add(image)
+
+
+        const positionalAudio = new THREE.PositionalAudio(listener)
+        audioLoader.load(`assets/pictures/${picture.folder}/${picture.audioFile}`, (audioBuffer) => {
+            positionalAudio.setBuffer(audioBuffer)
+            positionalAudio.setRefDistance(sizes.pictureViewDistance)
+            positionalAudio.setLoop(true)
+            positionalAudio.setVolume(10)
+            positionalAudio.setDirectionalCone(90, 180, 0.1)
+            positionalAudio.position.copy(image.position)
+            positionalAudio.rotation.copy(image.rotation)
+            audioObjects.push(positionalAudio)
+        })
     })
 }
+
+const listener = new THREE.AudioListener()
+const audioLoader = new THREE.AudioLoader()
+camera.add(listener)
+
 /**
  * Renderer
  */
@@ -200,6 +222,7 @@ const raycaser = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3())
 
 const clock = new THREE.Clock()
 let prevTime = clock.getElapsedTime()
+let currentlyPlayingAudio = null
 const tick = () => {
     const elapsedTime = clock.getElapsedTime()
     const timeDelta = elapsedTime - prevTime
@@ -255,11 +278,20 @@ const tick = () => {
     // Check for images
     const pictureCollisions = raycaser.intersectObjects(pictureMeshes)
     // TODO: exect regex match?
+    // TODO: change volume of currently playing music according to distance
     if (
         pictureCollisions.length > 0 && 
-        pictureCollisions[0].distance < sizes.pictureViewDistance &&
+        pictureCollisions[0].distance < sizes.pictureMusicDistance &&
         /picture-\d+/.exec(pictureCollisions[0].object.name).length > 0) {
-        console.log('Close to image:', pictureCollisions[0].object.name)
+            const newCurrentlyPlayingAudio = audioObjects[Number(pictureCollisions[0].object.name.split('-')[1])]
+            if (currentlyPlayingAudio != newCurrentlyPlayingAudio) {
+                if (currentlyPlayingAudio) {currentlyPlayingAudio.stop()}
+                currentlyPlayingAudio = newCurrentlyPlayingAudio
+                console.log(currentlyPlayingAudio)
+                currentlyPlayingAudio.play()
+                console.log('switched music')
+            }
+            console.log('Close to image:', pictureCollisions[0].object.name)
     }
 
     renderer.render(scene, camera)
