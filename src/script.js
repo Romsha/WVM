@@ -11,7 +11,7 @@ const sizes = {
     acceleration: 500,
     collisionDistance: 3,
     minMovingSpeed: 0.001,
-    wallsHeight: 20,
+    wallsHeight: 30,
     wallsThickness: 1
 }
 
@@ -23,7 +23,7 @@ const canvas = document.querySelector('canvas.webgl')
  */
 // Init
 const scene = new THREE.Scene()
-scene.background = new THREE.Color( 0x0000aa );
+scene.background = new THREE.Color( 0xd4f1ff );
 scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
 
 const axesHelper = new THREE.AxesHelper( 50 );
@@ -100,8 +100,13 @@ document.addEventListener('keyup', (event) => {
  */
 
 // Floor
+const textureLoader = new THREE.TextureLoader()
 const floorGeometry = new THREE.PlaneGeometry(2000, 2000, 200, 200)
-const floorMaterial = new THREE.MeshBasicMaterial({color: 0xeeeeee})
+const floorTexture = textureLoader.load('texture/marble.png');
+floorTexture.wrapS = THREE.RepeatWrapping
+floorTexture.wrapT = THREE.RepeatWrapping
+floorTexture.repeat.set(70, 70)
+const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture })
 const floor = new THREE.Mesh(floorGeometry, floorMaterial)
 floorGeometry.rotateX( - Math.PI / 2);
 scene.add(floor)
@@ -116,16 +121,25 @@ const wallsConfig = [
     {z: 170, x: 120, rotation: 0, length: 100},
     {z: 130, x: 70, rotation: Math.PI / 2, length: 80},
 ]
-const wallMaterial = new THREE.MeshBasicMaterial({color: 0xcccccc});
 const wallMeshes = []
-for (const wall of wallsConfig) {
-    const geomery = new THREE.BoxGeometry(wall.length, sizes.wallsHeight, sizes.wallsThickness)
-    const mesh = new THREE.Mesh(geomery, wallMaterial)
-    mesh.position.set(wall.x, 10, wall.z)
-    mesh.rotateY(wall.rotation)
-    wallMeshes.push(mesh)
-    scene.add(mesh)
-}
+var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
+    wallTexture.wrapS = THREE.RepeatWrapping
+    wallTexture.wrapT = THREE.RepeatWrapping
+    for (const wall of wallsConfig) {
+        const geomery = new THREE.BoxGeometry(wall.length, sizes.wallsHeight, sizes.wallsThickness)
+        const texture = wallTexture.clone()
+        texture.needsUpdate = true;
+        texture.wrapS = THREE.RepeatWrapping
+        texture.wrapT = THREE.RepeatWrapping
+        texture.repeat.set(wall.length / 10,  2)
+        const material = new THREE.MeshBasicMaterial({map: texture});
+        const mesh = new THREE.Mesh(geomery, material)
+        mesh.position.set(wall.x, sizes.wallsHeight / 2, wall.z)
+        mesh.rotateY(wall.rotation)
+        wallMeshes.push(mesh)
+        scene.add(mesh)
+    }
+});
 
 /**
  * Renderer
