@@ -11,8 +11,11 @@ const sizes = {
     acceleration: 500,
     collisionDistance: 3,
     minMovingSpeed: 0.001,
-    wallsHeight: 30,
-    wallsThickness: 1
+    wallsHeight: 25,
+    wallsThickness: 1,
+    pictureDepth: 0.5,
+    pictureHeight: 10,
+    pictureViewDistance: 30
 }
 
 // Canvas
@@ -125,7 +128,7 @@ const wallMeshes = []
 var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
     wallTexture.wrapS = THREE.RepeatWrapping
     wallTexture.wrapT = THREE.RepeatWrapping
-    for (const wall of wallsConfig) {
+    for (const [index, wall] of wallsConfig.entries()) {
         const geomery = new THREE.BoxGeometry(wall.length, sizes.wallsHeight, sizes.wallsThickness)
         const texture = wallTexture.clone()
         texture.needsUpdate = true;
@@ -136,11 +139,47 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
         const mesh = new THREE.Mesh(geomery, material)
         mesh.position.set(wall.x, sizes.wallsHeight / 2, wall.z)
         mesh.rotateY(wall.rotation)
+        mesh.name = `wall-${index}`
         wallMeshes.push(mesh)
         scene.add(mesh)
     }
 });
 
+// Pictures
+const pictureConfig = [
+    {folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2},
+    {folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2} ,
+    {folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI},
+]
+const pictureMeshes = []
+const blackMaterial = new THREE.MeshBasicMaterial({color: 0x000000})
+for (const [index, picture] of pictureConfig.entries()) {
+    textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
+        const image = new THREE.Mesh(
+            new THREE.BoxGeometry(
+                texture.image.width / texture.image.height * sizes.pictureHeight,
+                sizes.pictureHeight,
+                sizes.pictureDepth
+            ),
+            [
+                blackMaterial, 
+                blackMaterial, 
+                blackMaterial, 
+                blackMaterial, 
+                new THREE.MeshBasicMaterial({ map: texture }),
+                blackMaterial
+            ]
+        )
+        image.position.set(
+            picture.x + picture.offsetX, 
+            sizes.firstPersonHeight, 
+            picture.z + picture.offsetZ)
+        image.rotateY(picture.rotation)
+        image.name = `picture-${index}`
+        pictureMeshes.push(image)
+        scene.add(image)
+    })
+}
 /**
  * Renderer
  */
@@ -204,14 +243,24 @@ const tick = () => {
     camera.getWorldDirection(lookDirection)
     lookDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), deg)
     raycaser.set(controls.getObject().position, lookDirection)
-    const collisions = raycaser.intersectObjects(wallMeshes)
-    if (collisions.length > 0 && collisions[0].distance < sizes.collisionDistance) {
+    const wallCollisions = raycaser.intersectObjects(wallMeshes)
+    if (wallCollisions.length > 0 && wallCollisions[0].distance < sizes.collisionDistance) {
         velocity.set(0, 0, 0)
     }
 
     // Do move
     controls.moveRight(velocity.x * timeDelta)
     controls.moveForward(velocity.z * timeDelta)
+
+    // Check for images
+    const pictureCollisions = raycaser.intersectObjects(pictureMeshes)
+    // TODO: exect regex match?
+    if (
+        pictureCollisions.length > 0 && 
+        pictureCollisions[0].distance < sizes.pictureViewDistance &&
+        /picture-\d+/.exec(pictureCollisions[0].object.name).length > 0) {
+        console.log('Close to image:', pictureCollisions[0].object.name)
+    }
 
     renderer.render(scene, camera)
     window.requestAnimationFrame(tick)
