@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import { PointerLockControls } from '../node_modules/three/examples/jsm/controls/PointerLockControls'
-import { PositionalAudioHelper } from '../node_modules/three/examples/jsm/helpers/PositionalAudioHelper';
 
 
 // Sizes
@@ -17,7 +16,10 @@ const sizes = {
     pictureDepth: 0.5,
     pictureHeight: 10,
     pictureViewDistance: 30,
-    pictureMusicDistance: 50
+    pictureMusicDistance: 70,
+    pictureMusicVolumeMin: 0.1,
+    pictureMusicVolumeMax: 5,
+    pictureMusicVolumeStep: 0.1
 }
 
 // Canvas
@@ -37,7 +39,8 @@ scene.add( axesHelper );
 // Camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 1000)
 camera.position.y = sizes.firstPersonHeight
-camera.lookAt(new THREE.Vector3(1, 10, 0))
+camera.position.z = 50
+camera.lookAt(new THREE.Vector3(1, camera.position.y, camera.position.z))
 scene.add(camera)
 
 /**
@@ -149,15 +152,14 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
 
 // Pictures
 const pictureConfig = [
-    {folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3'},
-    {folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3'} ,
-    {folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3'},
+    {id: '1', folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3'},
+    {id: '2', folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3'} ,
+    {id: '3', folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3'},
 ]
-// TODO: pictures and meshes require uniq IDs (push order depends on loading times)
-const pictureMeshes = []
-const audioObjects = []
+const pictureMeshes = {}
+const audioObjects = {}
 const blackMaterial = new THREE.MeshBasicMaterial({color: 0x000000})
-for (const [index, picture] of pictureConfig.entries()) {
+for (const picture of pictureConfig) {
     textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
         const image = new THREE.Mesh(
             new THREE.BoxGeometry(
@@ -179,8 +181,8 @@ for (const [index, picture] of pictureConfig.entries()) {
             sizes.firstPersonHeight, 
             picture.z + picture.offsetZ)
         image.rotateY(picture.rotation)
-        image.name = `picture-${index}`
-        pictureMeshes.push(image)
+        image.name = `picture-${picture.id}`
+        pictureMeshes[picture.id] = image
         scene.add(image)
 
 
@@ -193,7 +195,7 @@ for (const [index, picture] of pictureConfig.entries()) {
             positionalAudio.setDirectionalCone(90, 180, 0.1)
             positionalAudio.position.copy(image.position)
             positionalAudio.rotation.copy(image.rotation)
-            audioObjects.push(positionalAudio)
+            audioObjects[picture.id] = positionalAudio
         })
     })
 }
@@ -222,11 +224,63 @@ const raycaser = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3())
 
 const clock = new THREE.Clock()
 let prevTime = clock.getElapsedTime()
-let currentlyPlayingAudio = null
+const totalMusicSteps = (sizes.pictureMusicVolumeMax - sizes.pictureMusicVolumeMin) / sizes.pictureMusicVolumeStep
+const distanceVolumeStepSize = sizes.pictureMusicDistance / totalMusicSteps
 const tick = () => {
     const elapsedTime = clock.getElapsedTime()
     const timeDelta = elapsedTime - prevTime
     prevTime = elapsedTime
+
+    // Check for images
+    /**
+     * Operation order for image and music:
+     * Music:
+     *  - Find all images closer than X, before hittig a wall - V
+     *  - Turn on all found pictures - V
+     *  - Turn off all other audio - V
+     *  - Set volume according to distance (some increments) - V
+     * Description:
+     *  - Find closest image which is not hidden by wall
+     *  - if closer than y: make sure description is shown
+     *  - if not closer than y: hide description
+     * 
+     */
+    /**
+     * Handle music
+     */
+    // Find all images close enough and not blocked by anything
+    const musicPlayingPictures = {}
+    const currentPosition = controls.getObject().position
+    for (const [pictureID, pictureMesh] of Object.entries(pictureMeshes)) {
+        const direction = new THREE.Vector3()
+        direction.subVectors(pictureMesh.position, currentPosition).normalize()
+        raycaser.set(currentPosition, direction)
+        const pictureCollisions = raycaser.intersectObject(pictureMesh)
+        // TODO: exect regex match?
+        if (pictureCollisions.length > 0 && 
+            /picture-\d+/.exec(pictureCollisions[0].object.name).length > 0 &&
+            pictureCollisions[0].distance < sizes.pictureMusicDistance) {
+                musicPlayingPictures[pictureID] = pictureCollisions[0].distance
+            }
+    }
+    // Stop and play music from pictures
+    for (const [pictureID, audioDevice] of Object.entries(audioObjects)) {
+        if (!Object.keys(musicPlayingPictures).includes(pictureID) && audioDevice.isPlaying) {
+            audioDevice.stop()
+            console.log('stoping music', pictureID)
+        } else if (Object.keys(musicPlayingPictures).includes(pictureID)) {
+            if (!audioDevice.isPlaying) {
+                audioDevice.play()
+                console.log('starting music', pictureID)
+            }
+            const musicStepsMinus = Math.floor(musicPlayingPictures[pictureID] / distanceVolumeStepSize)
+            const currentVolume = sizes.pictureMusicVolumeMax - sizes.pictureMusicVolumeStep * musicStepsMinus
+            if (audioDevice.getVolume() !== currentVolume) { 
+                audioDevice.setVolume(currentVolume) 
+            }
+        }
+    }
+
 
     // "Friction"
     velocity.x -= velocity.x * timeDelta * sizes.friction
@@ -275,24 +329,7 @@ const tick = () => {
     controls.moveRight(velocity.x * timeDelta)
     controls.moveForward(velocity.z * timeDelta)
 
-    // Check for images
-    const pictureCollisions = raycaser.intersectObjects(pictureMeshes)
-    // TODO: exect regex match?
-    // TODO: change volume of currently playing music according to distance
-    if (
-        pictureCollisions.length > 0 && 
-        pictureCollisions[0].distance < sizes.pictureMusicDistance &&
-        /picture-\d+/.exec(pictureCollisions[0].object.name).length > 0) {
-            const newCurrentlyPlayingAudio = audioObjects[Number(pictureCollisions[0].object.name.split('-')[1])]
-            if (currentlyPlayingAudio != newCurrentlyPlayingAudio) {
-                if (currentlyPlayingAudio) {currentlyPlayingAudio.stop()}
-                currentlyPlayingAudio = newCurrentlyPlayingAudio
-                console.log(currentlyPlayingAudio)
-                currentlyPlayingAudio.play()
-                console.log('switched music')
-            }
-            console.log('Close to image:', pictureCollisions[0].object.name)
-    }
+    
 
     renderer.render(scene, camera)
     window.requestAnimationFrame(tick)
