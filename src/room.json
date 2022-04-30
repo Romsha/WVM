@@ -1,4 +1,13 @@
 {
+    "floor": {
+        "sizeX": 200,
+        "sizeY": 200,
+        "tileRepeatScale": 2.8
+    },
+    "camera": {
+        "startX": 0,
+        "startZ": 50
+    },
     "wallsConfig": [
         {
             "z": 20,

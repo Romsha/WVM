@@ -1,0 +1,30 @@
+{
+    "walls": {
+        "tileRepeatFactor": 12.5,
+        "wallsHeight": 25,
+        "wallsThickness": 1
+    },
+    "text": {
+        "size": 0.7,
+        "height": 0.05,
+        "curveSegments": 6,
+        "bevelEnabled": false
+    },
+    "movement": {
+        "friction": 10,
+        "acceleration": 500,
+        "collisionDistance": 3,
+        "minMovingSpeed": 0.001
+    },
+    "pictures": {
+        "pictureDepth": 0.5,
+        "pictureHeight": 10,
+        "pictureTitleHeight": 17,
+        "pictureViewDistance": 30,
+        "pictureMusicDistance": 70,
+        "pictureMusicVolumeMin": 0.1,
+        "pictureMusicVolumeMax": 5,
+        "pictureMusicVolumeStep": 0.1
+    },
+    "firstPersonHeight": 10
+}
