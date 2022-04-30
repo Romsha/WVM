@@ -1,5 +1,7 @@
 import * as THREE from 'three'
-import { PointerLockControls } from '../node_modules/three/examples/jsm/controls/PointerLockControls'
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 
 
 // Sizes
@@ -15,6 +17,7 @@ const sizes = {
     wallsThickness: 1,
     pictureDepth: 0.5,
     pictureHeight: 10,
+    pictureTitleHeight: 17,
     pictureViewDistance: 30,
     pictureMusicDistance: 70,
     pictureMusicVolumeMin: 0.1,
@@ -30,11 +33,11 @@ const canvas = document.querySelector('canvas.webgl')
  */
 // Init
 const scene = new THREE.Scene()
-scene.background = new THREE.Color( 0xd4f1ff );
-scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
+scene.background = new THREE.Color(0xd4f1ff);
+scene.fog = new THREE.Fog(0xffffff, 0, 750);
 
-const axesHelper = new THREE.AxesHelper( 50 );
-scene.add( axesHelper );
+const axesHelper = new THREE.AxesHelper(50);
+scene.add(axesHelper);
 
 // Camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 1000)
@@ -42,12 +45,16 @@ camera.position.y = sizes.firstPersonHeight
 camera.position.z = 50
 camera.lookAt(new THREE.Vector3(1, camera.position.y, camera.position.z))
 scene.add(camera)
+const listener = new THREE.AudioListener()
+const audioLoader = new THREE.AudioLoader()
+camera.add(listener)
+
 
 /**
  * Controls
  */
 // mouse
-const controls = new PointerLockControls( camera, document.body );
+const controls = new PointerLockControls(camera, document.body);
 document.querySelector('body').addEventListener('click', () => {
     controls.lock();
 })
@@ -116,18 +123,18 @@ floorTexture.wrapT = THREE.RepeatWrapping
 floorTexture.repeat.set(70, 70)
 const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture })
 const floor = new THREE.Mesh(floorGeometry, floorMaterial)
-floorGeometry.rotateX( - Math.PI / 2);
+floorGeometry.rotateX(- Math.PI / 2);
 scene.add(floor)
 
 // Walls
 const wallsConfig = [
-    {z: 20, x: 35, rotation: 0, length: 70},
-    {z: 90, x: 35, rotation: 0, length: 70},
-    {z: 10, x: 70, rotation: Math.PI / 2, length: 20},
-    {z: 0, x: 120, rotation: 0, length: 100},
-    {z: 85, x: 170, rotation: Math.PI / 2, length: 170},
-    {z: 170, x: 120, rotation: 0, length: 100},
-    {z: 130, x: 70, rotation: Math.PI / 2, length: 80},
+    { z: 20, x: 35, rotation: 0, length: 70 },
+    { z: 90, x: 35, rotation: 0, length: 70 },
+    { z: 10, x: 70, rotation: Math.PI / 2, length: 20 },
+    { z: 0, x: 120, rotation: 0, length: 100 },
+    { z: 85, x: 170, rotation: Math.PI / 2, length: 170 },
+    { z: 170, x: 120, rotation: 0, length: 100 },
+    { z: 130, x: 70, rotation: Math.PI / 2, length: 80 },
 ]
 const wallMeshes = []
 var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
@@ -139,8 +146,8 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
         texture.needsUpdate = true;
         texture.wrapS = THREE.RepeatWrapping
         texture.wrapT = THREE.RepeatWrapping
-        texture.repeat.set(wall.length / 10,  2)
-        const material = new THREE.MeshBasicMaterial({map: texture});
+        texture.repeat.set(wall.length / 10, 2)
+        const material = new THREE.MeshBasicMaterial({ map: texture });
         const mesh = new THREE.Mesh(geomery, material)
         mesh.position.set(wall.x, sizes.wallsHeight / 2, wall.z)
         mesh.rotateY(wall.rotation)
@@ -152,14 +159,15 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
 
 // Pictures
 const pictureConfig = [
-    {id: '1', folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3'},
-    {id: '2', folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3'} ,
-    {id: '3', folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3'},
+    { id: '1', folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3', title: 'sonic the Hedghog' },
+    { id: '2', folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3', title: 'Super Mario' },
+    { id: '3', folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3', title: 'Little Fighters 2' },
 ]
 const pictureMeshes = {}
 const audioObjects = {}
-const blackMaterial = new THREE.MeshBasicMaterial({color: 0x000000})
+const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
 for (const picture of pictureConfig) {
+    // Picture itself
     textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
         const image = new THREE.Mesh(
             new THREE.BoxGeometry(
@@ -168,41 +176,68 @@ for (const picture of pictureConfig) {
                 sizes.pictureDepth
             ),
             [
-                blackMaterial, 
-                blackMaterial, 
-                blackMaterial, 
-                blackMaterial, 
+                blackMaterial,
+                blackMaterial,
+                blackMaterial,
+                blackMaterial,
                 new THREE.MeshBasicMaterial({ map: texture }),
                 blackMaterial
             ]
         )
         image.position.set(
-            picture.x + picture.offsetX, 
-            sizes.firstPersonHeight, 
+            picture.x + picture.offsetX,
+            sizes.firstPersonHeight,
             picture.z + picture.offsetZ)
         image.rotateY(picture.rotation)
         image.name = `picture-${picture.id}`
         pictureMeshes[picture.id] = image
         scene.add(image)
-
-
-        const positionalAudio = new THREE.PositionalAudio(listener)
-        audioLoader.load(`assets/pictures/${picture.folder}/${picture.audioFile}`, (audioBuffer) => {
-            positionalAudio.setBuffer(audioBuffer)
-            positionalAudio.setRefDistance(sizes.pictureViewDistance)
-            positionalAudio.setLoop(true)
-            positionalAudio.setVolume(10)
-            positionalAudio.setDirectionalCone(90, 180, 0.1)
-            positionalAudio.position.copy(image.position)
-            positionalAudio.rotation.copy(image.rotation)
-            audioObjects[picture.id] = positionalAudio
-        })
+    })
+    // Picture Audio
+    const positionalAudio = new THREE.PositionalAudio(listener)
+    audioLoader.load(`assets/pictures/${picture.folder}/${picture.audioFile}`, (audioBuffer) => {
+        positionalAudio.setBuffer(audioBuffer)
+        positionalAudio.setRefDistance(sizes.pictureViewDistance)
+        positionalAudio.setLoop(true)
+        positionalAudio.setVolume(10)
+        positionalAudio.setDirectionalCone(90, 180, 0.1)
+        positionalAudio.position.set(
+            picture.x + picture.offsetX,
+            sizes.firstPersonHeight,
+            picture.z + picture.offsetZ)
+        positionalAudio.rotateY(picture.rotation)
+        audioObjects[picture.id] = positionalAudio
     })
 }
 
-const listener = new THREE.AudioListener()
-const audioLoader = new THREE.AudioLoader()
-camera.add(listener)
+const fontLoader = new FontLoader()
+const textConfig = {
+    size: 0.7,
+    height: 0.05,
+    curveSegments: 6,
+    bevelEnabled: false,
+}
+const textMaterial = new THREE.MeshBasicMaterial({ color: 0x1e73e6 })
+fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
+    for (const picture of pictureConfig) {
+        const geomery = new TextGeometry(
+            picture.title,
+            {
+                font: font,
+                ...textConfig
+            }
+        )
+        geomery.center()
+        const text = new THREE.Mesh(geomery, textMaterial)
+        text.position.set(
+            picture.x + picture.offsetX,
+            sizes.pictureTitleHeight,
+            picture.z + picture.offsetZ)
+        text.rotateY(picture.rotation)
+        scene.add(text)
+
+    }
+})
 
 /**
  * Renderer
@@ -255,13 +290,14 @@ const tick = () => {
         const direction = new THREE.Vector3()
         direction.subVectors(pictureMesh.position, currentPosition).normalize()
         raycaser.set(currentPosition, direction)
+        // TODO: we should check intesection with wall aswell
         const pictureCollisions = raycaser.intersectObject(pictureMesh)
         // TODO: exect regex match?
-        if (pictureCollisions.length > 0 && 
+        if (pictureCollisions.length > 0 &&
             /picture-\d+/.exec(pictureCollisions[0].object.name).length > 0 &&
             pictureCollisions[0].distance < sizes.pictureMusicDistance) {
-                musicPlayingPictures[pictureID] = pictureCollisions[0].distance
-            }
+            musicPlayingPictures[pictureID] = pictureCollisions[0].distance
+        }
     }
     // Stop and play music from pictures
     for (const [pictureID, audioDevice] of Object.entries(audioObjects)) {
@@ -275,8 +311,8 @@ const tick = () => {
             }
             const musicStepsMinus = Math.floor(musicPlayingPictures[pictureID] / distanceVolumeStepSize)
             const currentVolume = sizes.pictureMusicVolumeMax - sizes.pictureMusicVolumeStep * musicStepsMinus
-            if (audioDevice.getVolume() !== currentVolume) { 
-                audioDevice.setVolume(currentVolume) 
+            if (audioDevice.getVolume() !== currentVolume) {
+                audioDevice.setVolume(currentVolume)
             }
         }
     }
@@ -285,8 +321,8 @@ const tick = () => {
     // "Friction"
     velocity.x -= velocity.x * timeDelta * sizes.friction
     velocity.z -= velocity.z * timeDelta * sizes.friction
-    if (Math.abs(velocity.x) < sizes.minMovingSpeed) { velocity.x = 0}
-    if (Math.abs(velocity.z) < sizes.minMovingSpeed) { velocity.z = 0}
+    if (Math.abs(velocity.x) < sizes.minMovingSpeed) { velocity.x = 0 }
+    if (Math.abs(velocity.z) < sizes.minMovingSpeed) { velocity.z = 0 }
 
     // Find move direction (relative to camera)
     direction.z = Number(moveForward) - Number(moveBackward)
@@ -294,10 +330,10 @@ const tick = () => {
     direction.normalize()
 
     // Add move Velocity
-    if ( moveForward || moveBackward ) {
+    if (moveForward || moveBackward) {
         velocity.z -= direction.z * sizes.acceleration * timeDelta * -1
-    } 
-    if ( moveLeft || moveRight ) {
+    }
+    if (moveLeft || moveRight) {
         velocity.x -= direction.x * sizes.acceleration * timeDelta * -1
     }
 
@@ -328,8 +364,6 @@ const tick = () => {
     // Do move
     controls.moveRight(velocity.x * timeDelta)
     controls.moveForward(velocity.z * timeDelta)
-
-    
 
     renderer.render(scene, camera)
     window.requestAnimationFrame(tick)
