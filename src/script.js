@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
-
+import room from './room.json'
 
 // Sizes
 const sizes = {
@@ -35,7 +35,7 @@ const canvas = document.querySelector('canvas.webgl')
 // Init
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0xd4f1ff);
-scene.fog = new THREE.Fog(0xffffff, 0, 750);
+scene.fog = new THREE.Fog(0xffffff, 0, 400);
 
 const axesHelper = new THREE.AxesHelper(50);
 scene.add(axesHelper);
@@ -117,31 +117,25 @@ document.addEventListener('keyup', (event) => {
 
 // Floor
 const textureLoader = new THREE.TextureLoader()
-const floorGeometry = new THREE.PlaneGeometry(2000, 2000, 200, 200)
+const floorGeometry = new THREE.PlaneGeometry(200, 200, 20, 20)
 const floorTexture = textureLoader.load('texture/marble.png');
 floorTexture.wrapS = THREE.RepeatWrapping
 floorTexture.wrapT = THREE.RepeatWrapping
 floorTexture.repeat.set(70, 70)
 const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture })
 const floor = new THREE.Mesh(floorGeometry, floorMaterial)
-floorGeometry.rotateX(- Math.PI / 2);
+floor.rotateX(- Math.PI / 2);
+floor.position.set(100, 0, 100)
 scene.add(floor)
 
 // Walls
-const wallsConfig = [
-    { z: 20, x: 35, rotation: 0, length: 70 },
-    { z: 90, x: 35, rotation: 0, length: 70 },
-    { z: 10, x: 70, rotation: Math.PI / 2, length: 20 },
-    { z: 0, x: 120, rotation: 0, length: 100 },
-    { z: 85, x: 170, rotation: Math.PI / 2, length: 170 },
-    { z: 170, x: 120, rotation: 0, length: 100 },
-    { z: 130, x: 70, rotation: Math.PI / 2, length: 80 },
-]
+const degToRad = (deg) => (deg / 180 * Math.PI)
+
 const wallMeshes = []
 var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
     wallTexture.wrapS = THREE.RepeatWrapping
     wallTexture.wrapT = THREE.RepeatWrapping
-    for (const [index, wall] of wallsConfig.entries()) {
+    for (const [index, wall] of room.wallsConfig.entries()) {
         const geomery = new THREE.BoxGeometry(wall.length, sizes.wallsHeight, sizes.wallsThickness)
         const texture = wallTexture.clone()
         texture.needsUpdate = true;
@@ -151,7 +145,7 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
         const material = new THREE.MeshBasicMaterial({ map: texture });
         const mesh = new THREE.Mesh(geomery, material)
         mesh.position.set(wall.x, sizes.wallsHeight / 2, wall.z)
-        mesh.rotateY(wall.rotation)
+        mesh.rotateY(degToRad(wall.rotation))
         mesh.name = `wall-${index}`
         wallMeshes.push(mesh)
         scene.add(mesh)
@@ -159,13 +153,8 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
 });
 
 // Pictures
-const pictureConfig = [
-    { id: '1', folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3', title: 'sonic the Hedghog', desc: 'https://en.wikipedia.org/wiki/Sonic_the_Hedgehog' },
-    { id: '2', folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3', title: 'Super Mario', desc: 'https://en.wikipedia.org/wiki/Super_Mario' },
-    { id: '3', folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3', title: 'Little Fighters 2', desc: 'https://en.wikipedia.org/wiki/Little_Fighter_2' },
-]
 const getPictureConfig = (id) => {
-    for (const picture of pictureConfig) {
+    for (const picture of room.pictureConfig) {
         if (picture.id === id) { return picture }
     }
     return null;
@@ -173,7 +162,7 @@ const getPictureConfig = (id) => {
 const pictureMeshes = {}
 const audioObjects = {}
 const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
-for (const picture of pictureConfig) {
+for (const picture of room.pictureConfig) {
     // Picture itself
     textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
         const image = new THREE.Mesh(
@@ -195,7 +184,7 @@ for (const picture of pictureConfig) {
             picture.x + picture.offsetX,
             sizes.firstPersonHeight,
             picture.z + picture.offsetZ)
-        image.rotateY(picture.rotation)
+        image.rotateY(degToRad(picture.rotation))
         image.name = `picture-${picture.id}`
         pictureMeshes[picture.id] = image
         scene.add(image)
@@ -212,7 +201,7 @@ for (const picture of pictureConfig) {
             picture.x + picture.offsetX,
             sizes.firstPersonHeight,
             picture.z + picture.offsetZ)
-        positionalAudio.rotateY(picture.rotation)
+        positionalAudio.rotateY(degToRad(picture.rotation))
         audioObjects[picture.id] = positionalAudio
     })
 }
@@ -226,7 +215,7 @@ const textConfig = {
 }
 const textMaterial = new THREE.MeshBasicMaterial({ color: 0x1e73e6 })
 fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
-    for (const picture of pictureConfig) {
+    for (const picture of room.pictureConfig) {
         const geomery = new TextGeometry(
             picture.title,
             {
@@ -240,7 +229,7 @@ fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
             picture.x + picture.offsetX,
             sizes.pictureTitleHeight,
             picture.z + picture.offsetZ)
-        text.rotateY(picture.rotation)
+        text.rotateY(degToRad(picture.rotation))
         scene.add(text)
 
     }
@@ -275,19 +264,6 @@ const tick = () => {
     prevTime = elapsedTime
 
     // Check for images
-    /**
-     * Operation order for image and music:
-     * Music:
-     *  - Find all images closer than X, before hittig a wall - V
-     *  - Turn on all found pictures - V
-     *  - Turn off all other audio - V
-     *  - Set volume according to distance (some increments) - V
-     * Description:
-     *  - Find closest image which is not hidden by wall
-     *  - if closer than y: make sure description is shown
-     *  - if not closer than y: hide description
-     * 
-     */
     /**
      * Handle music
      */

@@ -1,0 +1,87 @@
+{
+    "wallsConfig": [
+        {
+            "z": 20,
+            "x": 35,
+            "rotation": 0,
+            "length": 70
+        },
+        {
+            "z": 90,
+            "x": 35,
+            "rotation": 0,
+            "length": 70
+        },
+        {
+            "z": 10,
+            "x": 70,
+            "rotation": 90,
+            "length": 20
+        },
+        {
+            "z": 0,
+            "x": 120,
+            "rotation": 0,
+            "length": 100
+        },
+        {
+            "z": 85,
+            "x": 170,
+            "rotation": 90,
+            "length": 170
+        },
+        {
+            "z": 170,
+            "x": 120,
+            "rotation": 0,
+            "length": 100
+        },
+        {
+            "z": 130,
+            "x": 70,
+            "rotation": 90,
+            "length": 80
+        }
+    ],
+    "pictureConfig": [
+        {
+            "id": "1",
+            "folder": "sonic",
+            "pictureFile": "sonic-game.jpg",
+            "x": 170,
+            "z": 50,
+            "offsetX": -1,
+            "offsetZ": 0,
+            "rotation": -90,
+            "audioFile": "sonic-theme.mp3",
+            "title": "sonic the Hedghog",
+            "desc": "https://en.wikipedia.org/wiki/Sonic_the_Hedgehog"
+        },
+        {
+            "id": "2",
+            "folder": "mario",
+            "pictureFile": "super-mario-game.webp",
+            "x": 170,
+            "z": 120,
+            "offsetX": -1,
+            "offsetZ": 0,
+            "rotation": -90,
+            "audioFile": "super-mario-theme.mp3",
+            "title": "Super Mario",
+            "desc": "https://en.wikipedia.org/wiki/Super_Mario"
+        },
+        {
+            "id": "3",
+            "folder": "lf2",
+            "pictureFile": "lf2-game.webp",
+            "x": 120,
+            "z": 170,
+            "offsetX": 0,
+            "offsetZ": -1,
+            "rotation": 180,
+            "audioFile": "lf2-theme.mp3",
+            "title": "Little Fighters 2",
+            "desc": "https://en.wikipedia.org/wiki/Little_Fighter_2"
+        }
+    ]
+}
