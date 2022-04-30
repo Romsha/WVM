@@ -1,3 +1,4 @@
+import './style.css'
 import * as THREE from 'three'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
@@ -159,10 +160,16 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
 
 // Pictures
 const pictureConfig = [
-    { id: '1', folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3', title: 'sonic the Hedghog' },
-    { id: '2', folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3', title: 'Super Mario' },
-    { id: '3', folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3', title: 'Little Fighters 2' },
+    { id: '1', folder: 'sonic', pictureFile: 'sonic-game.jpg', x: 170, z: 50, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'sonic-theme.mp3', title: 'sonic the Hedghog', desc: 'https://en.wikipedia.org/wiki/Sonic_the_Hedgehog' },
+    { id: '2', folder: 'mario', pictureFile: 'super-mario-game.webp', x: 170, z: 120, offsetX: -1, offsetZ: 0, rotation: -Math.PI / 2, audioFile: 'super-mario-theme.mp3', title: 'Super Mario', desc: 'https://en.wikipedia.org/wiki/Super_Mario' },
+    { id: '3', folder: 'lf2', pictureFile: 'lf2-game.webp', x: 120, z: 170, offsetX: 0, offsetZ: -1, rotation: Math.PI, audioFile: 'lf2-theme.mp3', title: 'Little Fighters 2', desc: 'https://en.wikipedia.org/wiki/Little_Fighter_2' },
 ]
+const getPictureConfig = (id) => {
+    for (const picture of pictureConfig) {
+        if (picture.id === id) { return picture }
+    }
+    return null;
+}
 const pictureMeshes = {}
 const audioObjects = {}
 const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
@@ -256,7 +263,8 @@ renderer.render(scene, camera)
 const velocity = new THREE.Vector3()
 const direction = new THREE.Vector3()
 const raycaser = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3())
-
+const pictureDescContainer = document.querySelector('.picture-desc')
+let currentDescPictureID = null
 const clock = new THREE.Clock()
 let prevTime = clock.getElapsedTime()
 const totalMusicSteps = (sizes.pictureMusicVolumeMax - sizes.pictureMusicVolumeMin) / sizes.pictureMusicVolumeStep
@@ -290,7 +298,6 @@ const tick = () => {
         const direction = new THREE.Vector3()
         direction.subVectors(pictureMesh.position, currentPosition).normalize()
         raycaser.set(currentPosition, direction)
-        // TODO: we should check intesection with wall aswell
         const pictureCollisions = raycaser.intersectObjects([...wallMeshes, pictureMesh])
         // TODO: exect regex match?
         if (pictureCollisions.length > 0 &&
@@ -315,6 +322,25 @@ const tick = () => {
                 audioDevice.setVolume(currentVolume)
             }
         }
+    }
+    let closestPictureID = null
+    let closestPictureDistance = sizes.pictureViewDistance
+    // TODO: we depend on the fact that pictureMusicDistance > pictureViewDistance
+    for (const [pictureID, pictureDistance] of Object.entries(musicPlayingPictures)) {
+        if (pictureDistance < closestPictureDistance) {
+            closestPictureDistance = pictureDistance
+            closestPictureID = pictureID
+        }
+    }
+    if (closestPictureID) {
+        pictureDescContainer.classList.add('visible')
+        if (!currentDescPictureID || currentDescPictureID !== closestPictureID) {
+            currentDescPictureID = closestPictureID
+            pictureDescContainer.src = getPictureConfig(closestPictureID).desc
+        }
+    } else {
+        pictureDescContainer.classList.remove('visible')
+        currentDescPictureID = null
     }
 
 
