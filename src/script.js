@@ -291,10 +291,10 @@ const tick = () => {
         direction.subVectors(pictureMesh.position, currentPosition).normalize()
         raycaser.set(currentPosition, direction)
         // TODO: we should check intesection with wall aswell
-        const pictureCollisions = raycaser.intersectObject(pictureMesh)
+        const pictureCollisions = raycaser.intersectObjects([...wallMeshes, pictureMesh])
         // TODO: exect regex match?
         if (pictureCollisions.length > 0 &&
-            /picture-\d+/.exec(pictureCollisions[0].object.name).length > 0 &&
+            /picture-\d+/.exec(pictureCollisions[0].object.name) &&
             pictureCollisions[0].distance < sizes.pictureMusicDistance) {
             musicPlayingPictures[pictureID] = pictureCollisions[0].distance
         }
