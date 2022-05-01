@@ -116,14 +116,16 @@ const fontLoader = new FontLoader()
  * Controls
  */
 // Mouse Controls
+var pauseAllMusic = () => {}
+var resumeAllMusic = () => {}
 const controls = new PointerLockControls(camera, document.body);
 controls.addEventListener( 'lock', () => {
-	console.log("controls lock")
     overlay.classList.remove('visible')
+    resumeAllMusic()
 } );
 controls.addEventListener( 'unlock', () => {
-	console.log("controls unlock")
     overlay.classList.add('visible')
+    pauseAllMusic()
 } );
 startButton.addEventListener('click', () => {
     controls.lock();
@@ -228,6 +230,17 @@ textureLoader.load('texture/wall-bricks.png', (wallTexture) => {
 // Pictures
 const pictureMeshes = {}
 const audioObjects = {}
+let shouldPauseMusic = false
+pauseAllMusic = () => {
+    shouldPauseMusic = true
+    for (const audioObject of Object.values(audioObjects)) {
+        if (audioObject.isPlaying) { audioObject.pause() }
+    }
+
+}
+resumeAllMusic = () => { 
+    shouldPauseMusic = false
+}
 for (const picture of room.pictureConfig) {
     // Picture itself
     textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
@@ -288,7 +301,6 @@ fontLoader.load('assets/fonts/helvetiker_bold.typeface.json', (font) => {
             picture.z + picture.offsetZ)
         text.rotateY(degToRad(picture.rotation))
         scene.add(text)
-        console.log(text)
     }
 })
 
@@ -343,11 +355,9 @@ const tick = () => {
     for (const [pictureID, audioDevice] of Object.entries(audioObjects)) {
         if (!Object.keys(musicPlayingPictures).includes(pictureID) && audioDevice.isPlaying) {
             audioDevice.pause()
-            console.log('stoping music', pictureID)
         } else if (Object.keys(musicPlayingPictures).includes(pictureID)) {
-            if (!audioDevice.isPlaying) {
+            if (!audioDevice.isPlaying && !shouldPauseMusic) {
                 audioDevice.play()
-                console.log('starting music', pictureID)
             }
             const musicStepsMinus = Math.floor(musicPlayingPictures[pictureID] / distanceVolumeStepSize)
             const currentVolume = config.pictures.pictureMusicVolumeMax - config.pictures.pictureMusicVolumeStep * musicStepsMinus
