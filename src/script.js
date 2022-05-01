@@ -7,26 +7,73 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import room from './room.json'
 import config from './config.json'
 
-// Sizes
-const sizes = {
+const PICTURE_ID_PREFIX = "picture-"
+
+/**
+ * Window resize handling
+ */
+ const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
 }
 
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
+ window.addEventListener('resize', () => {
+    sizes.width = window.innerWidth
+    sizes.height = window.innerHeight
+
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
+
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+})
+
+window.addEventListener('dblclick', () => {
+    const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+
+    if (!fullscreenElement) {
+        if (canvas.requestFullscreen) {
+            canvas.requestFullscreen()
+        } else if (canvas.webkitRequestFullscreen) {
+            canvas.webkitRequestFullscreen()
+            console.log('safari is trash')
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen()
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen()
+        }
+    }
+})
 
 /**
- * Scene
+ * Utils
  */
-// Init
-const scene = new THREE.Scene()
-scene.background = new THREE.Color(0xd4f1ff);
-scene.fog = new THREE.Fog(0xffffff, 0, Math.max(room.floor.sizeX, room.floor.sizeY) * 2);
+const degToRad = (deg) => (deg / 180 * Math.PI)
 
+const getPictureConfig = (id) => {
+    for (const picture of room.pictureConfig) {
+        if (picture.id === id) { return picture }
+    }
+    return null;
+}
+
+/**
+ * Dom Elements
+ */
+const canvas = document.querySelector('canvas.webgl')
+const body = document.querySelector('body')
+const pictureDescContainer = document.querySelector('.picture-desc')
+
+/**
+ * Scene Init
+ */
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(config.sceneBG);
+scene.fog = new THREE.Fog(0xffffff, 0, Math.max(room.floor.sizeX, room.floor.sizeY) * 2);
 const axesHelper = new THREE.AxesHelper(50);
 scene.add(axesHelper);
-
 // Camera
 const camera = new THREE.PerspectiveCamera(
     75, 
@@ -38,27 +85,42 @@ camera.position.set(room.camera.startX, config.firstPersonHeight, room.camera.st
 camera.lookAt(new THREE.Vector3(1, camera.position.y, camera.position.z))
 scene.add(camera)
 const listener = new THREE.AudioListener()
-const audioLoader = new THREE.AudioLoader()
 camera.add(listener)
 
+/**
+ * Loaders
+ */
+THREE.DefaultLoadingManager.onProgress = (_, loaded, total) => {
+    console.log(`loaded: ${loaded}/${total}`)
+}
+THREE.DefaultLoadingManager.onLoad = () => {
+    console.log('loading completed')
+}
+const textureLoader = new THREE.TextureLoader()
+const audioLoader = new THREE.AudioLoader()
+const fontLoader = new FontLoader()
 
 /**
  * Controls
  */
-// mouse
+// Mouse Controls
 const controls = new PointerLockControls(camera, document.body);
-document.querySelector('body').addEventListener('click', () => {
+controls.addEventListener( 'lock', () => {
+	console.log("controls lock")
+} );
+controls.addEventListener( 'unlock', () => {
+	console.log("controls unlock")
+} );
+body.addEventListener('click', () => {
     controls.lock();
 })
 scene.add(controls.getObject())
 
-
-// Keys Controll
+// Keys Controls
 let moveForward = false;
 let moveBackward = false;
 let moveRight = false;
 let moveLeft = false;
-
 document.addEventListener('keydown', (event) => {
     switch (event.code) {
         case 'ArrowUp':
@@ -105,9 +167,11 @@ document.addEventListener('keyup', (event) => {
 /**
  * Objects
  */
+// materials
+const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
+const pictureTitleMaterial = new THREE.MeshBasicMaterial({ color: room.pictureTitleColor })
 
 // Floor
-const textureLoader = new THREE.TextureLoader()
 const floorGeometry = new THREE.PlaneGeometry(room.floor.sizeX, room.floor.sizeY, 1, 1)
 const floorTexture = textureLoader.load('texture/marble.png');
 floorTexture.wrapS = THREE.RepeatWrapping
@@ -122,10 +186,8 @@ floor.position.set(room.floor.sizeX / 2, 0, room.floor.sizeY / 2)
 scene.add(floor)
 
 // Walls
-const degToRad = (deg) => (deg / 180 * Math.PI)
-
 const wallMeshes = []
-var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
+textureLoader.load('texture/wall-bricks.png', (wallTexture) => {
     wallTexture.wrapS = THREE.RepeatWrapping
     wallTexture.wrapT = THREE.RepeatWrapping
     for (const [index, wall] of room.wallsConfig.entries()) {
@@ -136,8 +198,6 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
         )
         const texture = wallTexture.clone()
         texture.needsUpdate = true;
-        texture.wrapS = THREE.RepeatWrapping
-        texture.wrapT = THREE.RepeatWrapping
         texture.repeat.set(
             Math.floor(wall.length / config.walls.tileRepeatFactor),
             Math.floor(config.walls.wallsHeight / config.walls.tileRepeatFactor))
@@ -149,19 +209,11 @@ var wallTexture = textureLoader.load('texture/wall-bricks.png', () => {
         wallMeshes.push(mesh)
         scene.add(mesh)
     }
-});
+})
 
 // Pictures
-const getPictureConfig = (id) => {
-    for (const picture of room.pictureConfig) {
-        if (picture.id === id) { return picture }
-    }
-    return null;
-}
 const pictureMeshes = {}
 const audioObjects = {}
-const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
-const PICTURE_ID_PREFIX = "picture-"
 for (const picture of room.pictureConfig) {
     // Picture itself
     textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
@@ -195,7 +247,6 @@ for (const picture of room.pictureConfig) {
         positionalAudio.setBuffer(audioBuffer)
         positionalAudio.setRefDistance(config.pictures.pictureViewDistance)
         positionalAudio.setLoop(true)
-        //positionalAudio.setVolume(10)
         positionalAudio.setDirectionalCone(90, 180, 0.1)
         positionalAudio.position.set(
             picture.x + picture.offsetX,
@@ -205,9 +256,7 @@ for (const picture of room.pictureConfig) {
         audioObjects[picture.id] = positionalAudio
     })
 }
-
-const fontLoader = new FontLoader()
-const textMaterial = new THREE.MeshBasicMaterial({ color: 0x1e73e6 })
+// Picture titles
 fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
     for (const picture of room.pictureConfig) {
         const geomery = new TextGeometry(
@@ -218,14 +267,13 @@ fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
             }
         )
         geomery.center()
-        const text = new THREE.Mesh(geomery, textMaterial)
+        const text = new THREE.Mesh(geomery, pictureTitleMaterial)
         text.position.set(
             picture.x + picture.offsetX,
             config.pictures.pictureTitleHeight,
             picture.z + picture.offsetZ)
         text.rotateY(degToRad(picture.rotation))
         scene.add(text)
-
     }
 })
 
@@ -239,27 +287,27 @@ renderer.setSize(sizes.width, sizes.height)
 renderer.render(scene, camera)
 
 /**
- * Moving animation
+ * Animation
  */
-
+// Moving
 // Z is forward, X is sideways, Y unused - all relative to camera (not real axes)
 const velocity = new THREE.Vector3()
 const direction = new THREE.Vector3()
 const raycaser = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3())
-const pictureDescContainer = document.querySelector('.picture-desc')
-let currentDescPictureID = null
 const clock = new THREE.Clock()
 let prevTime = clock.getElapsedTime()
+// Music Playing
 const totalMusicSteps = (config.pictures.pictureMusicVolumeMax - config.pictures.pictureMusicVolumeMin) / config.pictures.pictureMusicVolumeStep
 const distanceVolumeStepSize = config.pictures.pictureMusicDistance / totalMusicSteps
+let currentDescPictureID = null
+
 const tick = () => {
     const elapsedTime = clock.getElapsedTime()
     const timeDelta = elapsedTime - prevTime
     prevTime = elapsedTime
 
-    // Check for images
     /**
-     * Handle music
+     * Handle pictures
      */
     // Find all images close enough and not blocked by anything
     const musicPlayingPictures = {}
@@ -276,7 +324,7 @@ const tick = () => {
             musicPlayingPictures[pictureID] = pictureCollisions[0].distance
         }
     }
-    // Stop and play music from pictures
+    // Stop and play music from pictures, adjust audio on all playing pictures
     for (const [pictureID, audioDevice] of Object.entries(audioObjects)) {
         if (!Object.keys(musicPlayingPictures).includes(pictureID) && audioDevice.isPlaying) {
             audioDevice.stop()
@@ -293,9 +341,10 @@ const tick = () => {
             }
         }
     }
+    // Show description for closest picture
     let closestPictureID = null
     let closestPictureDistance = config.pictures.pictureViewDistance
-    // TODO: we depend on the fact that pictureMusicDistance > pictureViewDistance
+    // Note: we depend on the fact that pictureMusicDistance > pictureViewDistance
     for (const [pictureID, pictureDistance] of Object.entries(musicPlayingPictures)) {
         if (pictureDistance < closestPictureDistance) {
             closestPictureDistance = pictureDistance
@@ -313,10 +362,13 @@ const tick = () => {
         currentDescPictureID = null
     }
 
-
+    /**
+     * Moving animation
+     */
     // "Friction"
     velocity.x -= velocity.x * timeDelta * config.movement.friction
     velocity.z -= velocity.z * timeDelta * config.movement.friction
+    // make velocity zero if its lower than the threashold
     if (Math.abs(velocity.x) < config.movement.minMovingSpeed) { velocity.x = 0 }
     if (Math.abs(velocity.z) < config.movement.minMovingSpeed) { velocity.z = 0 }
 
@@ -324,7 +376,6 @@ const tick = () => {
     direction.z = Number(moveForward) - Number(moveBackward)
     direction.x = Number(moveRight) - Number(moveLeft)
     direction.normalize()
-
     // Add move Velocity
     if (moveForward || moveBackward) {
         velocity.z -= direction.z * config.movement.acceleration * timeDelta * -1
@@ -346,12 +397,10 @@ const tick = () => {
     } else {
         deg = 0
     }
-
-    // Check for walls
-    const lookDirection = new THREE.Vector3()
-    camera.getWorldDirection(lookDirection)
-    lookDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), deg)
-    raycaser.set(controls.getObject().position, lookDirection)
+    const moveDirection = new THREE.Vector3()
+    camera.getWorldDirection(moveDirection)
+    moveDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), deg)
+    raycaser.set(currentPosition, moveDirection)
     const wallCollisions = raycaser.intersectObjects(wallMeshes)
     if (wallCollisions.length > 0 && 
         wallCollisions[0].distance < config.movement.collisionDistance) {
@@ -365,38 +414,5 @@ const tick = () => {
     renderer.render(scene, camera)
     window.requestAnimationFrame(tick)
 }
-
-/**
- * Window resize handling
- */
-window.addEventListener('resize', () => {
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
-window.addEventListener('dblclick', () => {
-    const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
-
-    if (!fullscreenElement) {
-        if (canvas.requestFullscreen) {
-            canvas.requestFullscreen()
-        } else if (canvas.webkitRequestFullscreen) {
-            canvas.webkitRequestFullscreen()
-            console.log('safari is trash')
-        }
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen()
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen()
-        }
-    }
-})
 
 tick()
