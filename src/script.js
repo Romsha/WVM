@@ -271,7 +271,7 @@ for (const picture of room.pictureConfig) {
     })
 }
 // Picture titles
-fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
+fontLoader.load('assets/fonts/helvetiker_bold.typeface.json', (font) => {
     for (const picture of room.pictureConfig) {
         const geomery = new TextGeometry(
             picture.title,
@@ -288,6 +288,7 @@ fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
             picture.z + picture.offsetZ)
         text.rotateY(degToRad(picture.rotation))
         scene.add(text)
+        console.log(text)
     }
 })
 
