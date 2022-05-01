@@ -34,7 +34,7 @@ html, body {
 }
 
 .overlay {
-    background-color: black;
+    background-color: #3a6397;
     position: absolute;
     right: 0;
     top: 0;
@@ -73,6 +73,7 @@ html, body {
 
 .overlay li {
     margin-left: 80px;
+    margin-top: 5px;
 }
 
 .overlay .loading {
@@ -111,6 +112,9 @@ html, body {
     justify-self: center;
     margin: 0 15vw 0 0;
     font-size: 30px;
+    border: 4px solid white;
+    padding: 10px 20px;
+    border-radius: 15px
 }
 
 .overlay .loading .start:hover {

@@ -3,10 +3,10 @@
     "floor": {
         "sizeX": 200,
         "sizeY": 200,
-        "tileRepeatScale": 2.8
+        "tileRepeatScale": 40
     },
     "camera": {
-        "startX": 0,
+        "startX": 10,
         "startZ": 50
     },
     "wallsConfig": [
@@ -51,6 +51,12 @@
             "x": 70,
             "rotation": 90,
             "length": 80
+        },
+        {
+            "z": 55,
+            "x": 0,
+            "rotation": 90,
+            "length": 70
         }
     ],
     "pictureConfig": [

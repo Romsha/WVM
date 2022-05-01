@@ -86,7 +86,7 @@ const camera = new THREE.PerspectiveCamera(
     Math.max(room.floor.sizeX, room.floor.sizeY) * 2
 )
 camera.position.set(room.camera.startX, config.firstPersonHeight, room.camera.startZ)
-camera.lookAt(new THREE.Vector3(1, camera.position.y, camera.position.z))
+camera.lookAt(new THREE.Vector3(room.camera.startX + 1, camera.position.y, camera.position.z))
 scene.add(camera)
 const listener = new THREE.AudioListener()
 camera.add(listener)
@@ -104,7 +104,7 @@ THREE.DefaultLoadingManager.onLoad = () => {
         window.setTimeout(() => {
             loadingBar.style.display = 'none'
             loadingText.style.display = 'none'
-            startText.style.display = 'block'
+            startText.style.display = 'inline-block'
         } , 1000)
     } , 1000)
 }
@@ -341,7 +341,7 @@ const tick = () => {
     // Stop and play music from pictures, adjust audio on all playing pictures
     for (const [pictureID, audioDevice] of Object.entries(audioObjects)) {
         if (!Object.keys(musicPlayingPictures).includes(pictureID) && audioDevice.isPlaying) {
-            audioDevice.stop()
+            audioDevice.pause()
             console.log('stoping music', pictureID)
         } else if (Object.keys(musicPlayingPictures).includes(pictureID)) {
             if (!audioDevice.isPlaying) {
