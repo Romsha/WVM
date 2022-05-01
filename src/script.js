@@ -63,8 +63,12 @@ const getPictureConfig = (id) => {
  * Dom Elements
  */
 const canvas = document.querySelector('canvas.webgl')
-const body = document.querySelector('body')
+const overlay = document.querySelector('.overlay')
+const startButton = document.querySelector('.start')
 const pictureDescContainer = document.querySelector('.picture-desc')
+const loadingBar = document.querySelector('.loading-bar')
+const loadingText = document.querySelector('.loading-text')
+const startText = document.querySelector('.start')
 
 /**
  * Scene Init
@@ -91,10 +95,18 @@ camera.add(listener)
  * Loaders
  */
 THREE.DefaultLoadingManager.onProgress = (_, loaded, total) => {
-    console.log(`loaded: ${loaded}/${total}`)
+    loadingBar.style.transform = `scaleX(${loaded/total})`
 }
 THREE.DefaultLoadingManager.onLoad = () => {
-    console.log('loading completed')
+    window.setTimeout(() => {
+        loadingBar.style.transformOrigin = 'right center'
+        loadingBar.style.transform = 'scaleX(0)'
+        window.setTimeout(() => {
+            loadingBar.style.display = 'none'
+            loadingText.style.display = 'none'
+            startText.style.display = 'block'
+        } , 1000)
+    } , 1000)
 }
 const textureLoader = new THREE.TextureLoader()
 const audioLoader = new THREE.AudioLoader()
@@ -107,11 +119,13 @@ const fontLoader = new FontLoader()
 const controls = new PointerLockControls(camera, document.body);
 controls.addEventListener( 'lock', () => {
 	console.log("controls lock")
+    overlay.classList.remove('visible')
 } );
 controls.addEventListener( 'unlock', () => {
 	console.log("controls unlock")
+    overlay.classList.add('visible')
 } );
-body.addEventListener('click', () => {
+startButton.addEventListener('click', () => {
     controls.lock();
 })
 scene.add(controls.getObject())

@@ -32,3 +32,87 @@ html, body {
     opacity: 0.7;
     transform: translateX(0);
 }
+
+.overlay {
+    background-color: black;
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    width: 100vw;
+    opacity: 0;
+    will-change: opacity, transform;
+    transform: translateY(100%);
+    transition: transform 1s ease-in-out, opacity 1s ease-in-out;
+    z-index: 200;
+    color: white;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 25px;
+    display: grid;
+    align-items: center;
+}
+
+.overlay.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.overlay > * {
+    margin-left: 15vw;
+}
+
+.overlay .welcome {
+    font-size: 30px;
+}
+
+.overlay .welcome span {
+    display: block;
+    margin-top: 20px;
+    font-size: 45px;
+}
+
+.overlay li {
+    margin-left: 80px;
+}
+
+.overlay .loading {
+    text-align: center;
+}
+
+.overlay .loading .loading-bar {
+    margin-left: -15vw;
+    position: relative;
+    left: 0;
+    width: 100vw;
+    background-color: white;
+    height: 10px;
+    transform: scaleX(.5);
+    transition: transform .5s ease-in-out;
+    will-change: transform;
+    transform-origin: left center;
+}
+
+.overlay .loading .loading-text {
+    justify-self: center;
+    margin: 30px 15vw 0 0;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0.0;
+    }
+}
+.blink {
+    animation: blink 2s ease-in-out infinite;
+}
+
+.overlay .loading .start {
+    display: none;
+    justify-self: center;
+    margin: 0 15vw 0 0;
+    font-size: 30px;
+}
+
+.overlay .loading .start:hover {
+    cursor: pointer;
+}
