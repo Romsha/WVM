@@ -1,0 +1,194 @@
+{
+    "pictureTitleColor": 2961221,
+    "floor": {
+        "sizeX": 200,
+        "sizeY": 200,
+        "tileRepeatScale": 40
+    },
+    "camera": {
+        "startX": 10,
+        "startZ": 50
+    },
+    "wallsConfig": [
+        {
+            "z": 20,
+            "x": 35,
+            "rotation": 0,
+            "length": 70
+        },
+        {
+            "z": 90,
+            "x": 35,
+            "rotation": 0,
+            "length": 70
+        },
+        {
+            "z": 10,
+            "x": 70,
+            "rotation": 90,
+            "length": 20
+        },
+        {
+            "z": 0,
+            "x": 120,
+            "rotation": 0,
+            "length": 100
+        },
+        {
+            "z": 85,
+            "x": 170,
+            "rotation": 90,
+            "length": 170
+        },
+        {
+            "z": 170,
+            "x": 120,
+            "rotation": 0,
+            "length": 100
+        },
+        {
+            "z": 130,
+            "x": 70,
+            "rotation": 90,
+            "length": 80
+        },
+        {
+            "z": 55,
+            "x": 0,
+            "rotation": 90,
+            "length": 70
+        }
+    ],
+    "pictureConfig": [
+        {
+            "folder": "licence_to_kill",
+            "pictureFile": "poster.jpg",
+            "x": 100,
+            "z": 0,
+            "offsetX": 0,
+            "offsetZ": 1,
+            "rotation": 0,
+            "audioFile": "theme.mp3",
+            "title": "Licence to Kill (1989)",
+            "desc": "https://www.007.com/the-films/licence-to-kill/",
+            "id": "9"
+        },
+        {
+            "folder": "goldeneye",
+            "pictureFile": "poster.jpg",
+            "x": 140,
+            "z": 0,
+            "offsetX": 0,
+            "offsetZ": 1,
+            "rotation": 0,
+            "audioFile": "theme.mp3",
+            "title": "GoldenEye (1995)",
+            "desc": "https://www.007.com/the-films/goldeneye",
+            "id": "8"
+        },
+        {
+            "folder": "tomorrow_never_dies",
+            "pictureFile": "poster.jpg",
+            "x": 170,
+            "z": 35,
+            "offsetX": -1,
+            "offsetZ": 0,
+            "rotation": -90,
+            "audioFile": "theme.mp3",
+            "title": "Tomorrow Never Dies (1997)",
+            "desc": "https://www.007.com/the-films/tomorrow-never-dies",
+            "id": "7"
+        },
+        {
+            "folder": "the_world_is_not_enough",
+            "pictureFile": "poster.jpg",
+            "x": 170,
+            "z": 65,
+            "offsetX": -1,
+            "offsetZ": 0,
+            "rotation": -90,
+            "audioFile": "theme.mp3",
+            "title": "The World Is Not Enough (1999)",
+            "desc": "https://www.007.com/the-films/the-world-is-not-enough",
+            "id": "6"
+        },
+        {
+            "folder": "die_another_day",
+            "pictureFile": "poster.jpg",
+            "x": 170,
+            "z": 95,
+            "offsetX": -1,
+            "offsetZ": 0,
+            "rotation": -90,
+            "audioFile": "theme.mp3",
+            "title": "Die Another Day (2002)",
+            "desc": "https://www.007.com/the-films/die-another-day",
+            "id": "5"
+        },
+        {
+            "folder": "casino_royale",
+            "pictureFile": "poster.jpg",
+            "x": 170,
+            "z": 130,
+            "offsetX": -1,
+            "offsetZ": 0,
+            "rotation": -90,
+            "audioFile": "theme.mp3",
+            "title": "Casino Royale (2006)",
+            "desc": "https://www.007.com/the-films/casino-royale",
+            "id": "4"
+        },
+        {
+            "folder": "quantum_of_solace",
+            "pictureFile": "poster.jpg",
+            "x": 140,
+            "z": 170,
+            "offsetX": 0,
+            "offsetZ": -1,
+            "rotation": 180,
+            "audioFile": "theme.mp3",
+            "title": "Quantum of Solace (2008)",
+            "desc": "https://www.007.com/the-films/quantum-of-solace",
+            "id": "3"
+        },
+        {
+            "folder": "skyfall",
+            "pictureFile": "poster.webp",
+            "x": 110,
+            "z": 170,
+            "offsetX": 0,
+            "offsetZ": -1,
+            "rotation": 180,
+            "audioFile": "theme.mp3",
+            "title": "Skyfall (2012)",
+            "desc": "https://www.007.com/the-films/skyfall",
+            "id": "2"
+        },
+        {
+            "folder": "spectre",
+            "pictureFile": "poster.jpg",
+            "x": 70,
+            "z": 145,
+            "offsetX": 1,
+            "offsetZ": 0,
+            "rotation": 90,
+            "audioFile": "theme.mp3",
+            "title": "Spectre (2015)",
+            "desc": "https://www.007.com/the-films/spectre",
+            "id": "1"
+        },
+        {
+            "folder": "no_time_to_die",
+            "pictureFile": "poster.jpg",
+            "x": 70,
+            "z": 115,
+            "offsetX": 1,
+            "offsetZ": 0,
+            "rotation": 90,
+            "audioFile": "theme.mp3",
+            "title": "No Time to Die (2021)",
+            "desc": "https://www.007.com/the-films/no-time-to-die",
+            "id": "0"
+        }
+    ]
+}

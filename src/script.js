@@ -4,7 +4,8 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 
-import room from './room.json'
+//import room from './room.json'
+import room from './bond.json'
 import config from './config.json'
 
 const PICTURE_ID_PREFIX = "picture-"
@@ -95,6 +96,7 @@ camera.add(listener)
  * Loaders
  */
 THREE.DefaultLoadingManager.onProgress = (_, loaded, total) => {
+    console.log(loaded, total, loaded/total)
     loadingBar.style.transform = `scaleX(${loaded/total})`
 }
 THREE.DefaultLoadingManager.onLoad = () => {

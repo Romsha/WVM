@@ -22,7 +22,7 @@
         "pictureHeight": 10,
         "pictureTitleHeight": 17,
         "pictureViewDistance": 30,
-        "pictureMusicDistance": 70,
+        "pictureMusicDistance": 30,
         "pictureMusicVolumeMin": 0.1,
         "pictureMusicVolumeMax": 5,
         "pictureMusicVolumeStep": 0.1
