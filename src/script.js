@@ -1,11 +1,15 @@
 import './style.css'
 import * as THREE from 'three'
+import * as dat from 'dat.gui'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 
-import * as dat from 'dat.gui'
-const gui = new dat.GUI()
+// Debug
+const DEBUG = false
+if (DEBUG) {
+    const gui = new dat.GUI()
+}
 
 //import room from './room.json'
 import room from './bond.json'
@@ -132,7 +136,6 @@ controls.addEventListener( 'lock', () => {
     overlay.classList.remove('visible')
     resumeAllMusic()
 } );
-const DEBUG = false
 if (!DEBUG) {
     controls.addEventListener( 'unlock', () => {
         overlay.classList.add('visible')
