@@ -25,7 +25,17 @@
         "pictureMusicDistance": 30,
         "pictureMusicVolumeMin": 0.1,
         "pictureMusicVolumeMax": 5,
-        "pictureMusicVolumeStep": 0.1
+        "pictureMusicVolumeStep": 0.1,
+        "materialRoughness": 0.5,
+        "materialMetalness": 0.1,
+        "lights": {
+            "lightPositionOffset": {
+                "width": 5,
+                "height": 5,
+                "depth": 15
+            },
+            "targetPositionHeightOffset": 2
+        }
     },
     "firstPersonHeight": 10
 }

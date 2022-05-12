@@ -4,6 +4,9 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 
+import * as dat from 'dat.gui'
+const gui = new dat.GUI()
+
 //import room from './room.json'
 import room from './bond.json'
 import config from './config.json'
@@ -92,11 +95,15 @@ scene.add(camera)
 const listener = new THREE.AudioListener()
 camera.add(listener)
 
+const ambiantLight = new THREE.AmbientLight(0xffffff, .85)
+scene.add(ambiantLight)
+
+
+
 /**
  * Loaders
  */
 THREE.DefaultLoadingManager.onProgress = (_, loaded, total) => {
-    console.log(loaded, total, loaded/total)
     loadingBar.style.transform = `scaleX(${loaded/total})`
 }
 THREE.DefaultLoadingManager.onLoad = () => {
@@ -125,10 +132,13 @@ controls.addEventListener( 'lock', () => {
     overlay.classList.remove('visible')
     resumeAllMusic()
 } );
-controls.addEventListener( 'unlock', () => {
-    overlay.classList.add('visible')
-    pauseAllMusic()
-} );
+const DEBUG = false
+if (!DEBUG) {
+    controls.addEventListener( 'unlock', () => {
+        overlay.classList.add('visible')
+        pauseAllMusic()
+    } );
+}
 startButton.addEventListener('click', () => {
     controls.lock();
 })
@@ -187,7 +197,7 @@ document.addEventListener('keyup', (event) => {
  */
 // materials
 const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
-const pictureTitleMaterial = new THREE.MeshBasicMaterial({ color: room.pictureTitleColor })
+const pictureTitleMaterial = new THREE.MeshStandardMaterial({ color: room.pictureTitleColor })
 
 // Floor
 const floorGeometry = new THREE.PlaneGeometry(room.floor.sizeX, room.floor.sizeY, 1, 1)
@@ -197,7 +207,7 @@ floorTexture.wrapT = THREE.RepeatWrapping
 floorTexture.repeat.set(
     Math.floor(room.floor.sizeX / room.floor.tileRepeatScale), 
     Math.floor(room.floor.sizeY / room.floor.tileRepeatScale))
-const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture })
+const floorMaterial = new THREE.MeshStandardMaterial({ map: floorTexture })
 const floor = new THREE.Mesh(floorGeometry, floorMaterial)
 floor.rotateX(- Math.PI / 2);
 floor.position.set(room.floor.sizeX / 2, 0, room.floor.sizeY / 2)
@@ -219,11 +229,12 @@ textureLoader.load('texture/wall-bricks.png', (wallTexture) => {
         texture.repeat.set(
             Math.floor(wall.length / config.walls.tileRepeatFactor),
             Math.floor(config.walls.wallsHeight / config.walls.tileRepeatFactor))
-        const material = new THREE.MeshBasicMaterial({ map: texture });
+        const material = new THREE.MeshStandardMaterial({ map: texture });
         const mesh = new THREE.Mesh(geomery, material)
         mesh.position.set(wall.x, config.walls.wallsHeight / 2, wall.z)
         mesh.rotateY(degToRad(wall.rotation))
         mesh.name = `wall-${index}`
+        mesh.receiveShadow = true
         wallMeshes.push(mesh)
         scene.add(mesh)
     }
@@ -232,6 +243,7 @@ textureLoader.load('texture/wall-bricks.png', (wallTexture) => {
 // Pictures
 const pictureMeshes = {}
 const audioObjects = {}
+const pictureLights = {}
 let shouldPauseMusic = false
 pauseAllMusic = () => {
     shouldPauseMusic = true
@@ -240,9 +252,63 @@ pauseAllMusic = () => {
     }
 
 }
+
 resumeAllMusic = () => { 
     shouldPauseMusic = false
 }
+
+const createPictureLights = (pictureConfig) => {
+    let light1X = pictureConfig.x + pictureConfig.offsetX
+    let light1Z = pictureConfig.z + pictureConfig.offsetZ
+    let light2X = light1X
+    let light2Z = light1Z
+
+    if (pictureConfig.offsetX) {
+        // image depth is in X axis
+        light1X += pictureConfig.offsetX * config.pictures.lights.lightPositionOffset.depth
+        light2X = light1X
+        light1Z += config.pictures.lights.lightPositionOffset.width
+        light2Z -= config.pictures.lights.lightPositionOffset.width
+    } else {
+        // image depth is in Z axis
+        light1Z += pictureConfig.offsetZ * config.pictures.lights.lightPositionOffset.depth
+        light2Z = light1Z
+        light1X += config.pictures.lights.lightPositionOffset.width
+        light2X -= config.pictures.lights.lightPositionOffset.width
+    }
+
+    const spotLight = new THREE.SpotLight(0xffffff, .4, 50, .2, .5, .1)
+    spotLight.position.set(
+        light1X, 
+        config.walls.wallsHeight + config.pictures.lights.lightPositionOffset.height, 
+        light1Z)
+    scene.add(spotLight)
+    spotLight.target.position.set(
+        pictureConfig.x + pictureConfig.offsetX, 
+        config.pictures.pictureHeight + config.pictures.lights.targetPositionHeightOffset, 
+        pictureConfig.z + pictureConfig.offsetZ)
+    scene.add(spotLight.target)
+
+    const spotLight2 = new THREE.SpotLight(0xffffff, .4, 50, .2, .5, .1)
+    spotLight2.position.set(
+        light2X, 
+        config.walls.wallsHeight + config.pictures.lights.lightPositionOffset.height, 
+        light2Z)
+    scene.add(spotLight2)
+    spotLight2.target.position.set(
+        pictureConfig.x + pictureConfig.offsetX, 
+        config.pictures.pictureHeight + config.pictures.lights.targetPositionHeightOffset, 
+        pictureConfig.z + pictureConfig.offsetZ)
+    scene.add(spotLight2.target)
+
+    spotLight.castShadow = true
+    spotLight2.castShadow = true
+    spotLight.visible = false
+    spotLight2.visible = false
+
+    pictureLights[pictureConfig.id] = [spotLight, spotLight2]
+}
+
 for (const picture of room.pictureConfig) {
     // Picture itself
     textureLoader.load(`assets/pictures/${picture.folder}/${picture.pictureFile}`, (texture) => {
@@ -257,10 +323,12 @@ for (const picture of room.pictureConfig) {
                 blackMaterial,
                 blackMaterial,
                 blackMaterial,
-                new THREE.MeshBasicMaterial({ map: texture }),
+                new THREE.MeshStandardMaterial({ map: texture }),
                 blackMaterial
             ]
         )
+        image.material[4].metalness = config.pictures.materialMetalness
+        image.material[4].roughness = config.pictures.materialRoughness
         image.position.set(
             picture.x + picture.offsetX,
             config.firstPersonHeight,
@@ -268,6 +336,7 @@ for (const picture of room.pictureConfig) {
         image.rotateY(degToRad(picture.rotation))
         image.name = `${PICTURE_ID_PREFIX}${picture.id}`
         pictureMeshes[picture.id] = image
+        image.castShadow = true
         scene.add(image)
     })
     // Picture Audio
@@ -284,7 +353,10 @@ for (const picture of room.pictureConfig) {
         positionalAudio.rotateY(degToRad(picture.rotation))
         audioObjects[picture.id] = positionalAudio
     })
+    // Picture Lights
+    createPictureLights(picture)
 }
+
 // Picture titles
 fontLoader.load('assets/fonts/helvetiker_bold.typeface.json', (font) => {
     for (const picture of room.pictureConfig) {
@@ -314,6 +386,7 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.render(scene, camera)
+renderer.shadowMap.enabled = true
 
 /**
  * Animation
@@ -368,7 +441,7 @@ const tick = () => {
             }
         }
     }
-    // Show description for closest picture
+    // Show description and turn on spotlight for closest picture
     let closestPictureID = null
     let closestPictureDistance = config.pictures.pictureViewDistance
     // Note: we depend on the fact that pictureMusicDistance > pictureViewDistance
@@ -381,10 +454,17 @@ const tick = () => {
     if (closestPictureID) {
         pictureDescContainer.classList.add('visible')
         if (!currentDescPictureID || currentDescPictureID !== closestPictureID) {
+            if (currentDescPictureID) {
+                for (const light of pictureLights[currentDescPictureID]) { light.visible = false }
+            }
             currentDescPictureID = closestPictureID
             pictureDescContainer.src = getPictureConfig(closestPictureID).desc
+            for (const light of pictureLights[currentDescPictureID]) { light.visible = true }   
         }
     } else {
+        if (currentDescPictureID) {
+            for (const light of pictureLights[currentDescPictureID]) { light.visible = false }
+        }
         pictureDescContainer.classList.remove('visible')
         currentDescPictureID = null
     }
