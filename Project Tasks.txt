@@ -14,8 +14,8 @@ Basic primitives:
     - description on picture interaction - V
 
 More:
-    - code organization - V
+    - code organization - X
     - cieling?
-    - consider lights?
+    - consider lights - V
     - intro + loading - V
     - "lock screen" - V

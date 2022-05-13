@@ -102,8 +102,6 @@ camera.add(listener)
 const ambiantLight = new THREE.AmbientLight(0xffffff, .85)
 scene.add(ambiantLight)
 
-
-
 /**
  * Loaders
  */
@@ -131,15 +129,18 @@ const fontLoader = new FontLoader()
 // Mouse Controls
 var pauseAllMusic = () => {}
 var resumeAllMusic = () => {}
+var controlsLocked = false
 const controls = new PointerLockControls(camera, document.body);
 controls.addEventListener( 'lock', () => {
     overlay.classList.remove('visible')
     resumeAllMusic()
+    controlsLocked = true
 } );
 if (!DEBUG) {
     controls.addEventListener( 'unlock', () => {
         overlay.classList.add('visible')
         pauseAllMusic()
+        controlsLocked = false
     } );
 }
 startButton.addEventListener('click', () => {
@@ -170,7 +171,6 @@ document.addEventListener('keydown', (event) => {
         case 'KeyD':
             moveRight = true;
             break;
-
     }
 })
 document.addEventListener('keyup', (event) => {
@@ -248,16 +248,20 @@ const pictureMeshes = {}
 const audioObjects = {}
 const pictureLights = {}
 let shouldPauseMusic = false
+
 pauseAllMusic = () => {
     shouldPauseMusic = true
     for (const audioObject of Object.values(audioObjects)) {
         if (audioObject.isPlaying) { audioObject.pause() }
     }
-
 }
 
 resumeAllMusic = () => { 
     shouldPauseMusic = false
+}
+
+const setPictureLights = (pictureID, lightState) => {
+    for (const light of pictureLights[pictureID]) { light.visible = lightState }
 }
 
 const createPictureLights = (pictureConfig) => {
@@ -308,7 +312,7 @@ const createPictureLights = (pictureConfig) => {
     spotLight2.castShadow = true
     spotLight.visible = false
     spotLight2.visible = false
-
+    
     pictureLights[pictureConfig.id] = [spotLight, spotLight2]
 }
 
@@ -404,13 +408,20 @@ let prevTime = clock.getElapsedTime()
 // Music Playing
 const totalMusicSteps = (config.pictures.pictureMusicVolumeMax - config.pictures.pictureMusicVolumeMin) / config.pictures.pictureMusicVolumeStep
 const distanceVolumeStepSize = config.pictures.pictureMusicDistance / totalMusicSteps
-let currentDescPictureID = null
+let prevDescPictureID = null
+
+const render = () => {
+    renderer.render(scene, camera)
+    window.requestAnimationFrame(tick)
+}
+
+
 
 const tick = () => {
-    const elapsedTime = clock.getElapsedTime()
-    const timeDelta = elapsedTime - prevTime
-    prevTime = elapsedTime
-
+    if (!controlsLocked) {
+        render()
+        return
+    }
     /**
      * Handle pictures
      */
@@ -456,21 +467,28 @@ const tick = () => {
     }
     if (closestPictureID) {
         pictureDescContainer.classList.add('visible')
-        if (!currentDescPictureID || currentDescPictureID !== closestPictureID) {
-            if (currentDescPictureID) {
-                for (const light of pictureLights[currentDescPictureID]) { light.visible = false }
+        if (!prevDescPictureID || prevDescPictureID !== closestPictureID) {
+            if (prevDescPictureID) {
+                setPictureLights(prevDescPictureID, false)
             }
-            currentDescPictureID = closestPictureID
+            // This line causes leg in animation
+            console.log('will turn on lights')
+            setPictureLights(closestPictureID, true)
+            console.log('turned on lights')
             pictureDescContainer.src = getPictureConfig(closestPictureID).desc
-            for (const light of pictureLights[currentDescPictureID]) { light.visible = true }   
+            prevDescPictureID = closestPictureID
         }
     } else {
-        if (currentDescPictureID) {
-            for (const light of pictureLights[currentDescPictureID]) { light.visible = false }
+        if (prevDescPictureID) {
+            setPictureLights(prevDescPictureID, false)
         }
         pictureDescContainer.classList.remove('visible')
-        currentDescPictureID = null
+        prevDescPictureID = null
     }
+
+    const elapsedTime = clock.getElapsedTime()
+    const timeDelta = Math.min(1/25, elapsedTime - prevTime)
+    prevTime = elapsedTime
 
     /**
      * Moving animation
@@ -518,11 +536,11 @@ const tick = () => {
     }
 
     // Do move
+    if (velocity.x !== 0 || velocity.z !== 0) {console.log('time delta: ', timeDelta, elapsedTime)}
     controls.moveRight(velocity.x * timeDelta)
     controls.moveForward(velocity.z * timeDelta)
 
-    renderer.render(scene, camera)
-    window.requestAnimationFrame(tick)
+    render()
 }
 
 tick()
